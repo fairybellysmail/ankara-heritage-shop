@@ -1,24 +1,40 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-// No head() here: the home route inherits title/description/og/twitter from
-// __root.tsx, and ships no og:image so serve-time hosting can inject the
-// project's social preview (explicit og:image or latest screenshot).
+import { StoreProvider } from "@/lib/store";
+import { SiteHeader } from "@/components/site-header";
+import { Hero } from "@/components/hero";
+import { Catalog } from "@/components/catalog";
+import { AsoebiNote } from "@/components/asoebi-note";
+import { CartPanel } from "@/components/cart-panel";
+import { SiteFooter } from "@/components/site-footer";
+
+const TITLE = "3kbelowankara — Affordable Ankara, Premium Heritage";
+const DESCRIPTION =
+  "Shop 100% cotton 3-yard Ankara bundles, ready-to-wear bubu gowns and palazzo trousers, plus asoebi bulk supply with volume pricing. Nationwide delivery from Lagos.";
+
 export const Route = createFileRoute("/")({
+  head: () => ({
+    meta: [
+      { title: TITLE },
+      { name: "description", content: DESCRIPTION },
+      { property: "og:title", content: TITLE },
+      { property: "og:description", content: DESCRIPTION },
+    ],
+  }),
   component: Index,
 });
 
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
 function Index() {
   return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
-    </div>
+    <StoreProvider>
+      <SiteHeader />
+      <main>
+        <Hero />
+        <Catalog />
+        <AsoebiNote />
+      </main>
+      <SiteFooter />
+      <CartPanel />
+    </StoreProvider>
   );
 }
