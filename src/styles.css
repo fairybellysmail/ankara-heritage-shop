@@ -4,6 +4,11 @@
 
 @custom-variant dark (&:is(.dark *));
 
+@theme {
+  --font-display: "Playfair Display", ui-serif, Georgia, serif;
+  --font-sans: "Manrope", ui-sans-serif, system-ui, sans-serif;
+}
+
 /*
  * Design system definition.
  *
@@ -61,27 +66,61 @@
   --color-sidebar-ring: var(--sidebar-ring);
 }
 
+/* Brand token registration so utilities like bg-clay / text-gold exist. */
+@theme inline {
+  --color-clay: var(--clay);
+  --color-clay-foreground: var(--clay-foreground);
+  --color-gold: var(--gold);
+  --color-gold-soft: var(--gold-soft);
+  --color-charcoal: var(--charcoal);
+  --color-charcoal-deep: var(--charcoal-deep);
+  --color-linen: var(--linen);
+  --color-success: var(--success);
+}
+
 :root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.129 0.042 264.695);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.129 0.042 264.695);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.129 0.042 264.695);
-  --primary: oklch(0.208 0.042 265.755);
-  --primary-foreground: oklch(0.984 0.003 247.858);
-  --secondary: oklch(0.968 0.007 247.896);
-  --secondary-foreground: oklch(0.208 0.042 265.755);
-  --muted: oklch(0.968 0.007 247.896);
-  --muted-foreground: oklch(0.554 0.046 257.417);
-  --accent: oklch(0.968 0.007 247.896);
-  --accent-foreground: oklch(0.208 0.042 265.755);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.984 0.003 247.858);
-  --border: oklch(0.929 0.013 255.508);
-  --input: oklch(0.929 0.013 255.508);
-  --ring: oklch(0.704 0.04 256.788);
+  /* ── 3kbelowankara brand tokens ──────────────────────────────
+   * Midnight Charcoal #1A1A1A · Linen Off-White #FBF9F6
+   * Burnished Gold #D4AF37 · Clay Terracotta #C57B57
+   */
+  --radius: 0.25rem;
+  --background: oklch(0.977 0.005 85);          /* linen off-white */
+  --foreground: oklch(0.205 0 0);               /* midnight charcoal */
+  --card: oklch(0.993 0.003 85);
+  --card-foreground: oklch(0.205 0 0);
+  --popover: oklch(0.993 0.003 85);
+  --popover-foreground: oklch(0.205 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.977 0.005 85);
+  --secondary: oklch(0.945 0.011 80);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.945 0.011 80);
+  --muted-foreground: oklch(0.5 0.012 70);
+  --accent: oklch(0.752 0.122 85.6);            /* burnished gold */
+  --accent-foreground: oklch(0.205 0 0);
+  --clay: oklch(0.66 0.093 41);                 /* muted terracotta */
+  --clay-foreground: oklch(0.977 0.005 85);
+  --gold: oklch(0.752 0.122 85.6);
+  --gold-soft: oklch(0.86 0.07 88);
+  --charcoal: oklch(0.205 0 0);
+  --charcoal-deep: oklch(0.16 0 0);
+  --linen: oklch(0.977 0.005 85);
+  --success: oklch(0.55 0.11 155);
+  --destructive: oklch(0.55 0.2 27.3);
+  --destructive-foreground: oklch(0.977 0.005 85);
+  --border: oklch(0.9 0.011 80);
+  --input: oklch(0.9 0.011 80);
+  --ring: oklch(0.752 0.122 85.6);
+  --gradient-editorial: linear-gradient(
+    180deg,
+    color-mix(in oklab, var(--charcoal-deep) 8%, transparent),
+    transparent 45%,
+    color-mix(in oklab, var(--charcoal-deep) 88%, transparent)
+  );
+  --gradient-gold: linear-gradient(100deg, var(--gold) 0%, var(--gold-soft) 52%, var(--clay) 100%);
+  --shadow-editorial: 0 24px 60px -28px color-mix(in oklab, var(--charcoal) 45%, transparent);
+  --shadow-panel: -24px 0 80px -24px color-mix(in oklab, var(--charcoal) 40%, transparent);
+  --tr-luxe: 420ms cubic-bezier(0.22, 1, 0.36, 1);
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
@@ -140,5 +179,74 @@
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
   }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display);
+  }
+}
+
+/* ── Reusable brand utilities (never inline ad-hoc colors) ── */
+
+@utility text-eyebrow {
+  font-size: 0.6875rem;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+@utility gold-rule {
+  background: var(--gradient-gold);
+  height: 1px;
+  width: 100%;
+}
+
+@utility surface-dark {
+  background-color: var(--charcoal);
+  color: var(--linen);
+}
+
+@utility media-zoom {
+  overflow: hidden;
+  & img {
+    transition: transform var(--tr-luxe);
+    will-change: transform;
+  }
+  &:hover img {
+    transform: scale(1.06);
+  }
+}
+
+@utility magnetic {
+  transition:
+    transform var(--tr-luxe),
+    box-shadow var(--tr-luxe),
+    background-color var(--tr-luxe);
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-editorial);
+  }
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@utility animate-rise {
+  animation: rise-in 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
