@@ -16,7 +16,7 @@ const STOCK_STYLES: Record<Product["stock_status"], string> = {
 
 export function ProductCard({ product }: { product: Product }) {
   const { addLine, openCart } = useStore();
-  const [option, setOption] = useState(product.options[0]);
+  const [option, setOption] = useState<string>(product.options[0] ?? product.variant);
   const [qty, setQty] = useState(product.minQty);
   const [justAdded, setJustAdded] = useState(false);
 
