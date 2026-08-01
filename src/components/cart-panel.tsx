@@ -105,12 +105,14 @@ export function CartPanel() {
     notes: "",
   });
   const [placed, setPlaced] = useState<PlacedOrder | null>(null);
+  const [reference, setReference] = useState(() => makeReference());
 
   // Deterministic reset whenever the panel re-opens.
   useEffect(() => {
     if (cartOpen) {
       setStep(0);
       setPlaced(null);
+      setReference(makeReference());
     }
   }, [cartOpen]);
 
@@ -126,7 +128,7 @@ export function CartPanel() {
   /** Snapshots the basket before clearing so the confirmation screen can summarize it. */
   function snapshotOrder(): PlacedOrder {
     return {
-      reference: `3KB-${Date.now().toString(36).slice(-6).toUpperCase()}`,
+      reference,
       items: lines.map((l) => ({
         name: l.product.name,
         option: l.option,
