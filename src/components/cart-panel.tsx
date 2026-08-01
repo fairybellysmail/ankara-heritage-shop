@@ -521,13 +521,11 @@ export function CartPanel() {
             ) : gateway === "whatsapp" ? (
               <a
                 href={`https://wa.me/${BRAND.whatsapp}?text=${encodeURIComponent(
-                  `Order from @${BRAND.handle}%0A${lines
-                    .map((l) => `${l.qty} x ${l.product.name} (${l.option}) [${l.sku}]`)
-                    .join(", ")} — Total ${formatNGN(total)}`,
+                  buildWhatsAppMessage(snapshotOrder()),
                 )}`}
                 target="_blank"
                 rel="noreferrer noopener"
-                onClick={placeOrder}
+                onClick={() => placeOrder(snapshotOrder())}
                 className="magnetic mt-4 block rounded-full bg-success px-6 py-3.5 text-center text-[11px] font-bold uppercase tracking-[0.22em] text-linen"
               >
                 Route order on WhatsApp
@@ -535,7 +533,7 @@ export function CartPanel() {
             ) : (
               <button
                 type="button"
-                onClick={placeOrder}
+                onClick={() => placeOrder(snapshotOrder())}
                 className="magnetic mt-4 w-full rounded-full bg-gold px-6 py-3.5 text-[11px] font-bold uppercase tracking-[0.22em] text-charcoal"
               >
                 Pay {formatNGN(total)} securely
