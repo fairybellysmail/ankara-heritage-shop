@@ -3,10 +3,11 @@
  * object only — title, pattern, price attributes, stock status, variants.
  */
 import { useState } from "react";
-import { Check, Minus, Plus } from "lucide-react";
+import { Check, Minus, Plus, ZoomIn } from "lucide-react";
 import { toast } from "sonner";
 import { formatNGN, unitPriceFor, buildSku, type Product } from "@/data/catalog";
 import { useStore } from "@/lib/store";
+import { QuickViewModal } from "@/components/quick-view-modal";
 
 const STOCK_STYLES: Record<Product["stock_status"], string> = {
   "In Stock": "text-success before:bg-success",
@@ -19,6 +20,7 @@ export function ProductCard({ product }: { product: Product }) {
   const [option, setOption] = useState<string>(product.options[0] ?? product.variant);
   const [qty, setQty] = useState(product.minQty);
   const [justAdded, setJustAdded] = useState(false);
+  const [quickView, setQuickView] = useState(false);
 
   const unitPrice = unitPriceFor(product, qty);
   const tierApplied = unitPrice < product.base_price;
@@ -48,6 +50,13 @@ export function ProductCard({ product }: { product: Product }) {
         <span className="absolute left-0 top-4 bg-charcoal px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-linen">
           {product.category}
         </span>
+        <button
+          type="button"
+          onClick={() => setQuickView(true)}
+          className="absolute bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-full bg-background/95 px-5 py-2.5 text-[10px] font-bold uppercase tracking-[0.2em] opacity-100 shadow-[var(--shadow-editorial)] transition-all duration-300 hover:bg-background md:opacity-0 md:group-hover:opacity-100"
+        >
+          <ZoomIn className="h-3.5 w-3.5 text-gold" /> Quick view
+        </button>
       </div>
 
       <div className="flex flex-1 flex-col p-5">
@@ -155,6 +164,13 @@ export function ProductCard({ product }: { product: Product }) {
           </p>
         </div>
       </div>
+
+      <QuickViewModal
+        product={product}
+        open={quickView}
+        onClose={() => setQuickView(false)}
+        onAdd={handleAdd}
+      />
     </article>
   );
 }
