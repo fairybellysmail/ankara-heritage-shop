@@ -217,12 +217,100 @@ export function CartPanel() {
 
         <div className="flex-1 overflow-y-auto px-5 py-5">
           {placed ? (
-            <div className="py-10 text-center">
-              <ShieldCheck className="mx-auto h-10 w-10 text-success" />
-              <h3 className="mt-4 font-display text-2xl tracking-tight">Routing complete</h3>
-              <p className="mx-auto mt-2 max-w-xs text-sm leading-relaxed text-muted-foreground">
-                Your pack reference has been queued. Delivery coordinates are encrypted and never
-                shared beyond fulfilment.
+            <div className="pb-2">
+              <div className="text-center">
+                <ShieldCheck className="mx-auto h-10 w-10 text-success" />
+                <h3 className="mt-4 font-display text-2xl tracking-tight">Routing complete</h3>
+                <p className="mx-auto mt-2 max-w-xs text-sm leading-relaxed text-muted-foreground">
+                  Your pack reference has been queued. Delivery coordinates are encrypted and never
+                  shared beyond fulfilment.
+                </p>
+                <p className="mt-3 inline-block border border-border bg-secondary px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em]">
+                  Ref {placed.reference}
+                </p>
+              </div>
+
+              {/* Itemised summary */}
+              <div className="mt-7 border-t border-border pt-4">
+                <p className="text-eyebrow text-muted-foreground">Items</p>
+                <ul className="mt-2.5 space-y-2.5">
+                  {placed.items.map((i) => (
+                    <li key={i.sku} className="flex justify-between gap-3 text-sm">
+                      <span className="min-w-0">
+                        <span className="block truncate font-display text-base leading-tight">
+                          {i.qty} × {i.name}
+                        </span>
+                        <span className="mt-0.5 block text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+                          {i.option} · SKU {i.sku}
+                        </span>
+                      </span>
+                      <span className="shrink-0 tabular-nums">{formatNGN(i.lineTotal)}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Totals */}
+              <dl className="mt-5 space-y-1.5 border-t border-border pt-4 text-sm">
+                <div className="flex justify-between text-muted-foreground">
+                  <dt>Subtotal ({placed.volume} items)</dt>
+                  <dd className="tabular-nums">{formatNGN(placed.subtotal)}</dd>
+                </div>
+                <div className="flex justify-between text-muted-foreground">
+                  <dt>Dispatch</dt>
+                  <dd className="tabular-nums">{formatNGN(placed.delivery)}</dd>
+                </div>
+                <div className="flex justify-between pt-1.5 font-display text-xl tracking-tight">
+                  <dt>Total paid</dt>
+                  <dd className="tabular-nums">{formatNGN(placed.total)}</dd>
+                </div>
+              </dl>
+
+              {/* Delivery + payment route */}
+              <div className="mt-5 space-y-3 border-t border-border pt-4 text-sm">
+                <div>
+                  <p className="text-eyebrow text-muted-foreground">Payment route</p>
+                  <p className="mt-1 font-semibold">{placed.gatewayLabel}</p>
+                </div>
+                <div>
+                  <p className="text-eyebrow text-muted-foreground">Delivery to</p>
+                  <p className="mt-1 leading-relaxed">
+                    {placed.routing.name}
+                    <br />
+                    {placed.routing.address}, {placed.routing.city}
+                    <br />
+                    {placed.routing.phone}
+                  </p>
+                </div>
+                {placed.routing.notes.trim() && (
+                  <div>
+                    <p className="text-eyebrow text-muted-foreground">Delivery notes</p>
+                    <p className="mt-1 leading-relaxed text-muted-foreground">
+                      {placed.routing.notes}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <a
+                href={`https://wa.me/${BRAND.whatsapp}?text=${encodeURIComponent(
+                  buildWhatsAppMessage(placed),
+                )}`}
+                target="_blank"
+                rel="noreferrer noopener"
+                className="magnetic mt-6 block rounded-full bg-success px-6 py-3.5 text-center text-[11px] font-bold uppercase tracking-[0.22em] text-linen"
+              >
+                Send order brief on WhatsApp
+              </a>
+              <button
+                type="button"
+                onClick={closeCart}
+                className="mt-3 w-full rounded-full border border-foreground/20 px-6 py-3 text-[11px] font-bold uppercase tracking-[0.2em] transition-colors hover:border-gold"
+              >
+                Continue shopping
+              </button>
+              <p className="mt-3 flex items-center justify-center gap-1.5 text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+                <Lock className="h-3 w-3" /> Details stored encrypted · Never resold
               </p>
             </div>
           ) : lines.length === 0 ? (
