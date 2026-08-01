@@ -66,6 +66,10 @@ interface PlacedOrder {
 }
 
 /** Human-readable WhatsApp order brief — customer, route, notes, line items. */
+function makeReference() {
+  return `3KB-${Date.now().toString(36).slice(-6).toUpperCase()}`;
+}
+
 function buildWhatsAppMessage(order: PlacedOrder) {
   const lines = [
     `*New order — @${BRAND.handle}*`,
