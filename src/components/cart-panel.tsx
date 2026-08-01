@@ -46,19 +46,71 @@ const GATEWAYS = [
 
 const DELIVERY_FEE = 3500;
 
+interface Routing {
+  name: string;
+  phone: string;
+  city: string;
+  address: string;
+  notes: string;
+}
+
+interface PlacedOrder {
+  reference: string;
+  items: { name: string; option: string; sku: string; qty: number; lineTotal: number }[];
+  subtotal: number;
+  delivery: number;
+  total: number;
+  volume: number;
+  routing: Routing;
+  gatewayLabel: string;
+}
+
+/** Human-readable WhatsApp order brief — customer, route, notes, line items. */
+function buildWhatsAppMessage(order: PlacedOrder) {
+  const lines = [
+    `*New order — @${BRAND.handle}*`,
+    `Ref: ${order.reference}`,
+    "",
+    "*Items*",
+    ...order.items.map(
+      (i) => `• ${i.qty} x ${i.name} (${i.option}) [${i.sku}] — ${formatNGN(i.lineTotal)}`,
+    ),
+    "",
+    `Subtotal (${order.volume} items): ${formatNGN(order.subtotal)}`,
+    `Dispatch: ${formatNGN(order.delivery)}`,
+    `*Total: ${formatNGN(order.total)}*`,
+    "",
+    "*Customer*",
+    `Name: ${order.routing.name}`,
+    `WhatsApp: ${order.routing.phone}`,
+    `City/State: ${order.routing.city}`,
+    `Address: ${order.routing.address}`,
+    `Delivery notes: ${order.routing.notes.trim() || "—"}`,
+    "",
+    `Route: ${order.gatewayLabel}`,
+  ];
+  return lines.join("\n");
+}
+
 export function CartPanel() {
   const { cartOpen, closeCart, lines, volume, subtotal, updateQty, removeLine, clearCart } =
     useStore();
   const [step, setStep] = useState(0);
   const [gateway, setGateway] = useState<string>("card");
-  const [routing, setRouting] = useState({ name: "", phone: "", city: "", address: "", notes: "" });
-  const [placed, setPlaced] = useState(false);
+  const [routing, setRouting] = useState<Routing>({
+    name: "",
+    phone: "",
+    city: "",
+    address: "",
+    notes: "",
+  });
+  const [placed, setPlaced] = useState<PlacedOrder | null>(null);
 
   // Deterministic reset whenever the panel re-opens.
   useEffect(() => {
     if (cartOpen) {
       setStep(0);
-      setPlaced(false);
+      setPlaced(null);
     }
   }, [cartOpen]);
 
@@ -69,8 +121,30 @@ export function CartPanel() {
     routing.address.trim() !== "";
   const total = subtotal + (lines.length ? DELIVERY_FEE : 0);
 
-  function placeOrder() {
-    setPlaced(true);
+  const gatewayLabel = GATEWAYS.find((g) => g.id === gateway)?.label ?? "Local Card Gateway";
+
+  /** Snapshots the basket before clearing so the confirmation screen can summarize it. */
+  function snapshotOrder(): PlacedOrder {
+    return {
+      reference: `3KB-${Date.now().toString(36).slice(-6).toUpperCase()}`,
+      items: lines.map((l) => ({
+        name: l.product.name,
+        option: l.option,
+        sku: l.sku,
+        qty: l.qty,
+        lineTotal: l.lineTotal,
+      })),
+      subtotal,
+      delivery: DELIVERY_FEE,
+      total,
+      volume,
+      routing,
+      gatewayLabel,
+    };
+  }
+
+  function placeOrder(order: PlacedOrder) {
+    setPlaced(order);
     clearCart();
     toast.success("Order routed to the atelier", {
       description: "A stylist confirms your pack within 20 minutes.",
