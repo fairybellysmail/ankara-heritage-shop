@@ -24,14 +24,14 @@ export function QuickViewModal({
 }) {
   const frames = product.gallery;
   const [index, setIndex] = useState(0);
-  const [zoom, setZoom] = useState(1);
-  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const [view, setView] = useState({ zoom: 1, x: 0, y: 0 });
+  const { zoom } = view;
+  const offset = { x: view.x, y: view.y };
   const stageRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<{ x: number; y: number; ox: number; oy: number } | null>(null);
 
   const reset = useCallback(() => {
-    setZoom(1);
-    setOffset({ x: 0, y: 0 });
+    setView({ zoom: 1, x: 0, y: 0 });
   }, []);
 
   useEffect(() => {
@@ -51,15 +51,11 @@ export function QuickViewModal({
 
   /** Zoom around a point in stage coordinates (px, py) — keeps it stationary. */
   const zoomAt = useCallback((nextRaw: number, px: number, py: number) => {
-    setZoom((z) => {
+    setView((v) => {
       const next = clamp(nextRaw, MIN_ZOOM, MAX_ZOOM);
-      const k = next / z;
-      setOffset((o) =>
-        next === MIN_ZOOM
-          ? { x: 0, y: 0 }
-          : { x: px - (px - o.x) * k, y: py - (py - o.y) * k },
-      );
-      return next;
+      if (next === MIN_ZOOM) return { zoom: MIN_ZOOM, x: 0, y: 0 };
+      const k = next / v.zoom;
+      return { zoom: next, x: px - (px - v.x) * k, y: py - (py - v.y) * k };
     });
   }, []);
 
@@ -70,9 +66,13 @@ export function QuickViewModal({
     if (!el) return;
     const rect = el.getBoundingClientRect();
     const dy = e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 100 : 1);
-    setZoom((z) => {
-      zoomAt(z * Math.exp(-dy * 0.0018), e.clientX - rect.left, e.clientY - rect.top);
-      return z;
+    const px = e.clientX - rect.left;
+    const py = e.clientY - rect.top;
+    setView((v) => {
+      const next = clamp(v.zoom * Math.exp(-dy * 0.0018), MIN_ZOOM, MAX_ZOOM);
+      if (next === MIN_ZOOM) return { zoom: MIN_ZOOM, x: 0, y: 0 };
+      const k = next / v.zoom;
+      return { zoom: next, x: px - (px - v.x) * k, y: py - (py - v.y) * k };
     });
   };
 
@@ -112,7 +112,7 @@ export function QuickViewModal({
   function onPointerMove(e: React.PointerEvent) {
     const d = dragRef.current;
     if (!d) return;
-    setOffset({ x: d.ox + (e.clientX - d.x), y: d.oy + (e.clientY - d.y) });
+    setView((v) => ({ ...v, x: d.ox + (e.clientX - d.x), y: d.oy + (e.clientY - d.y) }));
   }
   function onPointerUp() {
     dragRef.current = null;
