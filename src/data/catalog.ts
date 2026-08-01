@@ -7,6 +7,14 @@ import fabricImg from "@/assets/product-fabric.jpg";
 import bubuImg from "@/assets/product-bubu.jpg";
 import palazzoImg from "@/assets/product-palazzo.jpg";
 import asoebiImg from "@/assets/product-asoebi.jpg";
+import fabricMacro from "@/assets/detail-fabric-macro.jpg";
+import fabricStack from "@/assets/detail-fabric-stack.jpg";
+import bubuMacro from "@/assets/detail-bubu-macro.jpg";
+import bubuFull from "@/assets/detail-bubu-full.jpg";
+import palazzoMacro from "@/assets/detail-palazzo-macro.jpg";
+import palazzoStyled from "@/assets/detail-palazzo-styled.jpg";
+import asoebiMacro from "@/assets/detail-asoebi-macro.jpg";
+import asoebiBulk from "@/assets/detail-asoebi-bulk.jpg";
 
 export type Category = "Fabrics" | "Ready-to-Wear" | "Asoebi";
 export type StockStatus = "In Stock" | "Limited Stock" | "Inquire for Timeline";
@@ -21,6 +29,8 @@ export interface Product {
   description: string;
   /** Presentation metadata layered on top of the canonical schema. */
   image: string;
+  /** Quick-view gallery frames — first is the card image. */
+  gallery: { src: string; caption: string }[];
   pattern: string;
   options: string[];
   optionLabel: string;
@@ -54,6 +64,11 @@ export const PRODUCTS: Product[] = [
     description:
       "Authentic, high-grade cotton weave featuring traditional vibrant print styling.",
     image: fabricImg,
+    gallery: [
+      { src: fabricImg, caption: "3-yard bundle as supplied" },
+      { src: fabricMacro, caption: "Macro: wax-block print edges & cotton weave" },
+      { src: fabricStack, caption: "Print family stack — indigo, ochre, emerald" },
+    ],
     pattern: "Geometric Wax Block",
     optionLabel: "Print Family",
     options: ["Indigo Bloom", "Ochre Sun", "Emerald Tile", "Clay Mosaic"],
@@ -69,6 +84,11 @@ export const PRODUCTS: Product[] = [
     description:
       "Flowing, sophisticated silhouette engineered for modern everyday luxury.",
     image: bubuImg,
+    gallery: [
+      { src: bubuImg, caption: "Bubu gown, house styling" },
+      { src: bubuMacro, caption: "Macro: rosette medallion & hem stitch" },
+      { src: bubuFull, caption: "Full-length drape on body" },
+    ],
     pattern: "Rosette Medallion",
     optionLabel: "Fit",
     options: ["Free Size", "Plus (UK 18-22)", "Petite Length"],
@@ -84,6 +104,11 @@ export const PRODUCTS: Product[] = [
     description:
       "Wide-leg cut with premium pattern alignment across all structural seams.",
     image: palazzoImg,
+    gallery: [
+      { src: palazzoImg, caption: "Palazzo trousers, flat styling" },
+      { src: palazzoMacro, caption: "Macro: sunburst alignment across the seam" },
+      { src: palazzoStyled, caption: "Styled in motion — wide-leg fall" },
+    ],
     pattern: "Radial Sunburst",
     optionLabel: "Size",
     options: ["S", "M", "L", "XL"],
@@ -99,6 +124,11 @@ export const PRODUCTS: Product[] = [
     description:
       "High-volume fabric pairing and coordination tailored for traditional event sizing.",
     image: asoebiImg,
+    gallery: [
+      { src: asoebiImg, caption: "Asoebi coordination sample" },
+      { src: asoebiMacro, caption: "Macro: two-tone leaf damask pairing" },
+      { src: asoebiBulk, caption: "Bulk packs prepared for an event" },
+    ],
     pattern: "Coordinated Leaf Damask",
     optionLabel: "Coordination",
     options: ["Single Print", "Two-Tone Pairing", "Bride + Party Split"],
