@@ -43,7 +43,7 @@ export interface Product {
   options: string[];
   optionLabel: string;
   minQty: number;
-  volumeTiers?: VolumeTier[];
+  volumeTiers: VolumeTier[];
   published: boolean;
   sortOrder: number;
 }
@@ -88,7 +88,7 @@ export function resolveImage(src: string): string {
 /** Deterministic unit price resolution in a currency, including volume tiers. */
 export function priceIn(product: Product, qty: number, currency: Currency): number {
   const base = currency === "NGN" ? product.base_price : product.price_gbp;
-  if (!product.volumeTiers?.length) return base;
+  if (product.volumeTiers.length === 0) return base;
   return product.volumeTiers.reduce(
     (price, tier) => (qty >= tier.minQty ? tierPriceIn(tier, currency) : price),
     base,

@@ -22,8 +22,8 @@ export interface ProductRow {
   sort_order: number;
 }
 
-function toTiers(value: unknown): VolumeTier[] | undefined {
-  if (!Array.isArray(value) || value.length === 0) return undefined;
+function toTiers(value: unknown): VolumeTier[] {
+  if (!Array.isArray(value)) return [];
   return value.map((raw) => {
     const t = raw as Record<string, unknown>;
     return {
