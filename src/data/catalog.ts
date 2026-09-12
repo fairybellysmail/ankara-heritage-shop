@@ -1,7 +1,7 @@
 /**
- * ── PRODUCT DATA ENGINE ────────────────────────────────────────────────
- * Rigidly decoupled from all UI rendering logic. Components consume these
- * structured metadata objects only — no hard-coded product copy in views.
+ * ── PRODUCT DOMAIN MODEL ───────────────────────────────────────────────
+ * Types, currency helpers and asset resolution. Product records themselves
+ * now live in the database and arrive through `catalog.functions.ts`.
  */
 import fabricImg from "@/assets/product-fabric.jpg";
 import bubuImg from "@/assets/product-bubu.jpg";
@@ -18,33 +18,44 @@ import asoebiBulk from "@/assets/detail-asoebi-bulk.jpg";
 
 export type Category = "Fabrics" | "Ready-to-Wear" | "Asoebi";
 export type StockStatus = "In Stock" | "Limited Stock" | "Inquire for Timeline";
+export type Currency = "NGN" | "GBP";
+
+export interface VolumeTier {
+  minQty: number;
+  label: string;
+  unitPriceNgn: number;
+  unitPriceGbp: number;
+}
 
 export interface Product {
   id: string;
+  code: string;
   name: string;
   category: Category;
   variant: string;
   base_price: number;
+  price_gbp: number;
   stock_status: StockStatus;
   description: string;
-  /** Presentation metadata layered on top of the canonical schema. */
   image: string;
-  /** Quick-view gallery frames — first is the card image. */
   gallery: { src: string; caption: string }[];
   pattern: string;
   options: string[];
   optionLabel: string;
   minQty: number;
-  /** Volume pricing rules — Asoebi bulk merchandising. */
-  volumeTiers?: { minQty: number; unitPrice: number; label: string }[];
+  volumeTiers?: VolumeTier[];
+  published: boolean;
+  sortOrder: number;
 }
 
 export const BRAND = {
   handle: "3kbelowankara",
-  currency: "NGN",
   whatsapp: "2348000000000",
   instagram: "https://www.instagram.com/3kbelowankara",
 } as const;
+
+/** Delivery fee per currency. */
+export const DELIVERY_FEE: Record<Currency, number> = { NGN: 3500, GBP: 18 };
 
 export const CATEGORIES: { key: Category | "All"; label: string; blurb: string }[] = [
   { key: "All", label: "All Pieces", blurb: "The complete house selection" },
@@ -53,115 +64,70 @@ export const CATEGORIES: { key: Category | "All"; label: string; blurb: string }
   { key: "Asoebi", label: "Asoebi Bulk", blurb: "Volume pricing for events" },
 ];
 
-export const PRODUCTS: Product[] = [
-  {
-    id: "ank-001",
-    name: "Premium 100% Cotton Ankara",
-    category: "Fabrics",
-    variant: "3-Yard Bundle",
-    base_price: 3000,
-    stock_status: "In Stock",
-    description:
-      "Authentic, high-grade cotton weave featuring traditional vibrant print styling.",
-    image: fabricImg,
-    gallery: [
-      { src: fabricImg, caption: "3-yard bundle as supplied" },
-      { src: fabricMacro, caption: "Macro: wax-block print edges & cotton weave" },
-      { src: fabricStack, caption: "Print family stack — indigo, ochre, emerald" },
-    ],
-    pattern: "Geometric Wax Block",
-    optionLabel: "Print Family",
-    options: ["Indigo Bloom", "Ochre Sun", "Emerald Tile", "Clay Mosaic"],
-    minQty: 1,
-  },
-  {
-    id: "rtw-002",
-    name: "Elegance Bubu Gown",
-    category: "Ready-to-Wear",
-    variant: "Free Size",
-    base_price: 12500,
-    stock_status: "Limited Stock",
-    description:
-      "Flowing, sophisticated silhouette engineered for modern everyday luxury.",
-    image: bubuImg,
-    gallery: [
-      { src: bubuImg, caption: "Bubu gown, house styling" },
-      { src: bubuMacro, caption: "Macro: rosette medallion & hem stitch" },
-      { src: bubuFull, caption: "Full-length drape on body" },
-    ],
-    pattern: "Rosette Medallion",
-    optionLabel: "Fit",
-    options: ["Free Size", "Plus (UK 18-22)", "Petite Length"],
-    minQty: 1,
-  },
-  {
-    id: "rtw-003",
-    name: "Tailored Palazzo Trousers",
-    category: "Ready-to-Wear",
-    variant: "Adjustable Waist",
-    base_price: 8500,
-    stock_status: "In Stock",
-    description:
-      "Wide-leg cut with premium pattern alignment across all structural seams.",
-    image: palazzoImg,
-    gallery: [
-      { src: palazzoImg, caption: "Palazzo trousers, flat styling" },
-      { src: palazzoMacro, caption: "Macro: sunburst alignment across the seam" },
-      { src: palazzoStyled, caption: "Styled in motion — wide-leg fall" },
-    ],
-    pattern: "Radial Sunburst",
-    optionLabel: "Size",
-    options: ["S", "M", "L", "XL"],
-    minQty: 1,
-  },
-  {
-    id: "aso-004",
-    name: "Custom Asoebi Bulk Supply",
-    category: "Asoebi",
-    variant: "Minimum 10 Packs",
-    base_price: 2800,
-    stock_status: "Inquire for Timeline",
-    description:
-      "High-volume fabric pairing and coordination tailored for traditional event sizing.",
-    image: asoebiImg,
-    gallery: [
-      { src: asoebiImg, caption: "Asoebi coordination sample" },
-      { src: asoebiMacro, caption: "Macro: two-tone leaf damask pairing" },
-      { src: asoebiBulk, caption: "Bulk packs prepared for an event" },
-    ],
-    pattern: "Coordinated Leaf Damask",
-    optionLabel: "Coordination",
-    options: ["Single Print", "Two-Tone Pairing", "Bride + Party Split"],
-    minQty: 10,
-    volumeTiers: [
-      { minQty: 10, unitPrice: 2800, label: "10 – 24 packs" },
-      { minQty: 25, unitPrice: 2650, label: "25 – 49 packs" },
-      { minQty: 50, unitPrice: 2450, label: "50+ packs" },
-    ],
-  },
-];
+/** Bundled house imagery, addressable from database rows as `asset:<file>`. */
+const ASSET_MAP: Record<string, string> = {
+  "product-fabric.jpg": fabricImg,
+  "product-bubu.jpg": bubuImg,
+  "product-palazzo.jpg": palazzoImg,
+  "product-asoebi.jpg": asoebiImg,
+  "detail-fabric-macro.jpg": fabricMacro,
+  "detail-fabric-stack.jpg": fabricStack,
+  "detail-bubu-macro.jpg": bubuMacro,
+  "detail-bubu-full.jpg": bubuFull,
+  "detail-palazzo-macro.jpg": palazzoMacro,
+  "detail-palazzo-styled.jpg": palazzoStyled,
+  "detail-asoebi-macro.jpg": asoebiMacro,
+  "detail-asoebi-bulk.jpg": asoebiBulk,
+};
 
-/** Deterministic unit price resolution, including volume tier rules. */
-export function unitPriceFor(product: Product, qty: number): number {
-  if (!product.volumeTiers) return product.base_price;
+export function resolveImage(src: string): string {
+  if (src.startsWith("asset:")) return ASSET_MAP[src.slice(6)] ?? "";
+  return src;
+}
+
+/** Deterministic unit price resolution in a currency, including volume tiers. */
+export function priceIn(product: Product, qty: number, currency: Currency): number {
+  const base = currency === "NGN" ? product.base_price : product.price_gbp;
+  if (!product.volumeTiers?.length) return base;
   return product.volumeTiers.reduce(
-    (price, tier) => (qty >= tier.minQty ? tier.unitPrice : price),
-    product.base_price,
+    (price, tier) => (qty >= tier.minQty ? tierPriceIn(tier, currency) : price),
+    base,
   );
 }
 
-export function formatNGN(amount: number): string {
-  return new Intl.NumberFormat("en-NG", {
+export function tierPriceIn(tier: VolumeTier, currency: Currency): number {
+  return currency === "NGN" ? tier.unitPriceNgn : tier.unitPriceGbp;
+}
+
+export function formatMoney(amount: number, currency: Currency): string {
+  return new Intl.NumberFormat(currency === "NGN" ? "en-NG" : "en-GB", {
     style: "currency",
-    currency: BRAND.currency,
-    maximumFractionDigits: 0,
+    currency,
+    maximumFractionDigits: currency === "NGN" ? 0 : 2,
   }).format(amount);
 }
 
-/** SKU definition: product id + option token, stable and human readable. */
+/** SKU definition: product code + option token, stable and human readable. */
 export function buildSku(product: Product, option: string): string {
-  return `${product.id.toUpperCase()}-${option
+  return `${product.code.toUpperCase()}-${option
     .replace(/[^a-zA-Z0-9]+/g, "")
     .slice(0, 6)
     .toUpperCase()}`;
 }
+
+/** Nigeria + wider Africa settle in NGN through Paystack; everyone else in GBP. */
+const AFRICA_TIMEZONE_PREFIX = "Africa/";
+
+export function detectCurrency(): Currency {
+  try {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone ?? "";
+    return tz.startsWith(AFRICA_TIMEZONE_PREFIX) ? "NGN" : "GBP";
+  } catch {
+    return "NGN";
+  }
+}
+
+export const CURRENCY_PROVIDER: Record<Currency, "paystack" | "stripe"> = {
+  NGN: "paystack",
+  GBP: "stripe",
+};
