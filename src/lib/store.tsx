@@ -1,21 +1,24 @@
 /**
  * ── CENTRALIZED TRANSACTIONAL STATE ───────────────────────────────────
- * Single source of truth for active catalog filter, cart lines, cart volume
- * and the slide-out checkout panel. UI components stay presentational.
+ * Single source of truth for the catalog filter, selected currency, cart
+ * lines and the slide-out checkout panel. UI components stay presentational.
  */
 import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
 } from "react";
 import {
-  PRODUCTS,
   buildSku,
-  unitPriceFor,
+  detectCurrency,
+  formatMoney,
+  priceIn,
   type Category,
+  type Currency,
   type Product,
 } from "@/data/catalog";
 
@@ -36,9 +39,13 @@ export interface PricedLine extends CartLine {
 type Filter = Category | "All";
 
 interface StoreValue {
+  products: Product[];
   filter: Filter;
   setFilter: (f: Filter) => void;
   visibleProducts: Product[];
+  currency: Currency;
+  setCurrency: (c: Currency) => void;
+  money: (amount: number) => string;
   lines: PricedLine[];
   volume: number;
   subtotal: number;
@@ -53,25 +60,37 @@ interface StoreValue {
 
 const StoreContext = createContext<StoreValue | null>(null);
 
-export function StoreProvider({ children }: { children: ReactNode }) {
+export function StoreProvider({
+  children,
+  products,
+}: {
+  children: ReactNode;
+  products: Product[];
+}) {
   const [filter, setFilter] = useState<Filter>("All");
   const [rawLines, setRawLines] = useState<CartLine[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
+  const [currency, setCurrency] = useState<Currency>("NGN");
+
+  // Region-aware default, resolved after hydration to avoid SSR mismatches.
+  useEffect(() => {
+    setCurrency(detectCurrency());
+  }, []);
 
   const visibleProducts = useMemo(
-    () => (filter === "All" ? PRODUCTS : PRODUCTS.filter((p) => p.category === filter)),
-    [filter],
+    () => (filter === "All" ? products : products.filter((p) => p.category === filter)),
+    [filter, products],
   );
 
   const lines = useMemo<PricedLine[]>(
     () =>
       rawLines.flatMap((line) => {
-        const product = PRODUCTS.find((p) => p.id === line.productId);
+        const product = products.find((p) => p.id === line.productId);
         if (!product) return [];
-        const unitPrice = unitPriceFor(product, line.qty);
+        const unitPrice = priceIn(product, line.qty, currency);
         return [{ ...line, product, unitPrice, lineTotal: unitPrice * line.qty }];
       }),
-    [rawLines],
+    [rawLines, products, currency],
   );
 
   const volume = lines.reduce((n, l) => n + l.qty, 0);
@@ -84,21 +103,27 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       if (existing) {
         return prev.map((l) => (l.key === key ? { ...l, qty: l.qty + qty } : l));
       }
-      return [...prev, { key, productId: product.id, sku: buildSku(product, option), option, qty }];
+      return [
+        ...prev,
+        { key, productId: product.id, sku: buildSku(product, option), option, qty },
+      ];
     });
   }, []);
 
-  const updateQty = useCallback((key: string, qty: number) => {
-    setRawLines((prev) =>
-      prev.flatMap((l) => {
-        if (l.key !== key) return [l];
-        const product = PRODUCTS.find((p) => p.id === l.productId);
-        const floor = product?.minQty ?? 1;
-        if (qty < floor) return [];
-        return [{ ...l, qty }];
-      }),
-    );
-  }, []);
+  const updateQty = useCallback(
+    (key: string, qty: number) => {
+      setRawLines((prev) =>
+        prev.flatMap((l) => {
+          if (l.key !== key) return [l];
+          const product = products.find((p) => p.id === l.productId);
+          const floor = product?.minQty ?? 1;
+          if (qty < floor) return [];
+          return [{ ...l, qty }];
+        }),
+      );
+    },
+    [products],
+  );
 
   const removeLine = useCallback(
     (key: string) => setRawLines((prev) => prev.filter((l) => l.key !== key)),
@@ -106,9 +131,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   );
 
   const value: StoreValue = {
+    products,
     filter,
     setFilter,
     visibleProducts,
+    currency,
+    setCurrency,
+    money: (amount: number) => formatMoney(amount, currency),
     lines,
     volume,
     subtotal,
